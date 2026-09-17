@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  target:
+    build: 
+      context: ./vulnerable-service
+    container_name: week1_recon_target
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    networks:
+      - week1_net
+
+networks:
+  week1_net:
+    driver: bridge

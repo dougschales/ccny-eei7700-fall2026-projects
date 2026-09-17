@@ -1,0 +1,5 @@
+zone "target.local" {
+    type master;
+    file "/etc/bind/db.target.local";
+    allow-transfer { any; }; # Intentionally misconfigured to allow AXFR
+};

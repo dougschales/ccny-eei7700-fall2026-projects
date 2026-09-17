@@ -1,0 +1,7 @@
+options {
+    directory "/var/bind";
+    allow-query { any; };
+    recursion no;
+    listen-on { any; };
+    listen-on-v6 { none; };
+};

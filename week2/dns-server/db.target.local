@@ -1,0 +1,15 @@
+$TTL    604800
+@       IN      SOA     ns1.target.local. admin.target.local. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      ns1.target.local.
+ns1     IN      A       172.20.0.10
+@       IN      A       172.20.0.20
+www     IN      A       172.20.0.20
+dev     IN      A       172.20.0.20
+staging IN      A       172.20.0.20
+secret  IN      TXT     "flag{axfr_z0n3_tr4nsf3r_succ3ss}"

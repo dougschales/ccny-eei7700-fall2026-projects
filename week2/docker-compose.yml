@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  dns:
+    build: ./dns-server
+    container_name: week2_dns
+    restart: unless-stopped
+    ports:
+      # Exposing on 1053 to avoid conflict with host system services and allow rootless execution
+      - "1053:53/udp"
+      - "1053:53/tcp"
+    networks:
+      week2_net:
+        ipv4_address: 172.20.0.10
+
+  web:
+    build: ./web-server
+    container_name: week2_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "31337:31337" # The hidden high port
+    networks:
+      week2_net:
+        ipv4_address: 172.20.0.20
+
+networks:
+  week2_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
