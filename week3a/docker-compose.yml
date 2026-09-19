@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  target:
+    image: week3_target
+    container_name: week3_target
+    hostname: target
+    restart: unless-stopped
+    ports:
+      - "8000:80"        # Apache Web Server
+      - "8080:8080"      # Dev Portal Web Server (Lighttpd)
+      - "2121:21"        # FTP Server (vsFTPd 3.0.5)
+      - "2222:2222"      # SSH Server (OpenSSH 8.9p1)
+      - "6379:6379"      # Redis Server
+      - "9001:9001"      # Custom Admin Gateway TCP Service
+      - "1139:139"       # SMB (NetBIOS Session Service)
+      - "1445:445"       # SMB File Server
+    networks:
+      week3_net:
+        ipv4_address: 172.25.0.10
+
+  student:
+    image: week3_student
+    container_name: week3_student
+    hostname: student
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_ADMIN
+    networks:
+      week3_net:
+        ipv4_address: 172.25.0.5
+    depends_on:
+      - target
+    stdin_open: true
+    tty: true
+
+networks:
+  week3_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
