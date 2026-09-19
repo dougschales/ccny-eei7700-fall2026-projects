@@ -18,12 +18,14 @@ echo "[+] Started vsFTPd on port 21"
 python3 /opt/services/banner_service.py &
 echo "[+] Started Custom Admin Gateway on port 9001"
 
-# 3. Setup Flag 3 (NFS exposed share)
-mkdir -p /srv/nfs/public/backups
-echo "flag{w3_3_nfs_3xp0s3d_sh4r3_3num3r4t10n}" > /srv/nfs/public/backups/flag3.txt
-chmod -R 777 /srv/nfs/public
-python3 /opt/services/nfs_service.py &
-echo "[+] Started NFS Server on port 2049 & RPC on port 111"
+# 3. Setup Flag 3 (SMB exposed share)
+mkdir -p /srv/smb/public/backups
+echo "flag{w3_3_nfs_3xp0s3d_sh4r3_3num3r4t10n}" > /srv/smb/public/backups/flag3.txt
+chmod -R 755 /srv/smb/public
+mkdir -p /var/log/samba /var/lib/samba/private /run/samba
+smbd -D
+nmbd -D
+echo "[+] Started SMB Server on ports 139/445"
 
 # 4. Setup Flag 4 (Redis Server on port 6379)
 redis-server /etc/redis/redis.conf

@@ -17,7 +17,6 @@ RUN apt-get update && yes | unminimize && apt-get update && apt-get install -y m
     wget \
     python3 \
     python3-pip \
-    nfs-common \
     smbclient \
     redis-tools \
     openssh-client \

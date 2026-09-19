@@ -67,10 +67,12 @@ def dev_portal():
     <h1>CyberCorp Internal Dev Portal v1.4</h1>
     <p>Welcome, Engineers. Ensure all services are version-matched before deployment.</p>
     <!-- DEV NOTE: Debug API endpoint active at /dev_portal/api/v1/vault. Requires query param key derive: md5(service_versions) where service_versions = vsftpd_version + "_" + lighttpd_version (e.g. 3.0.5_1.4.63) -->
+    <!-- DEV NOTE: zip file password is vsftpd_3.0.5 -->
     <ul>
         <li>FTP Server: Active (Port 21)</li>
         <li>SSH Server: Active (Port 2222)</li>
         <li>Admin Gateway: Active (Port 9001)</li>
+        <li>Users: root, sysadmin</li>     
     </ul>
 </body>
 </html>"""
