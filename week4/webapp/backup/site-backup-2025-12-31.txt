@@ -1,0 +1,15 @@
+# CyberCorp Portal - Pre-Migration Backup Notes (2025-12-31)
+# Ops: remove this from web root before the next release. -M.
+
+[users export - schema only, no live data]
+id, username, role
+1, admin, admin
+2, jsmith, user
+
+[TODO]
+- Rotate admin creds after the Q4 audit
+- The old /reports integration config is still sitting in
+  /opt/app/config/ on the app host, should be deleted, not our problem
+  since it moved to the internal-db service
+
+flag{w4_2_b4ckup_f1l3_3xp0sur3}

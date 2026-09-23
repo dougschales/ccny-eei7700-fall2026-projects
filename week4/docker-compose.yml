@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Foothold target. Reachable directly from the student workstation.
+  # Dual-homed: also attached to week4_internal_net so it can reach the
+  # backend database that students cannot reach directly.
+  webapp:
+    build:
+      context: ./webapp
+    container_name: week4_webapp
+    hostname: webapp
+    restart: unless-stopped
+    init: true
+    environment:
+      ADMIN_PASSWORD: "K3ep_This_S3cr3t_9f2a"
+      FLASK_SECRET: "change-me-not-that-it-matters-for-this-lab"
+    cap_add:
+      - NET_RAW
+    networks:
+      week4_edge_net:
+        ipv4_address: 172.30.0.10
+      week4_internal_net:
+        ipv4_address: 172.30.1.10
+    depends_on:
+      - internal-db
+
+  # Internal-only backend. Only reachable from webapp (via week4_internal_net).
+  internal-db:
+    image: mariadb:10.11
+    container_name: week4_internal-db
+    hostname: internal-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: "r00t_only_l0cal_2026!"
+      MYSQL_DATABASE: internal
+      MYSQL_USER: svc_reports
+      MYSQL_PASSWORD: "R3p0rt1ng!2026"
+    volumes:
+      - ./internal-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro,Z
+    networks:
+      week4_internal_net:
+        ipv4_address: 172.30.1.20
+
+  # Student pentesting workstation. Only attached to week4_edge_net, so
+  # webapp is the ONLY host it can reach. Everything past that requires
+  # pivoting through a compromised webapp.
+  student:
+    build:
+      context: ./student
+    container_name: week4_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week4_edge_net:
+        ipv4_address: 172.30.0.5
+    depends_on:
+      - webapp
+    stdin_open: true
+    tty: true
+
+networks:
+  week4_edge_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  week4_internal_net:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.1.0/24
