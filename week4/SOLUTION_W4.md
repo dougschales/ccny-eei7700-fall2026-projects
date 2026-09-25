@@ -36,6 +36,11 @@ curl -s http://webapp/robots.txt
 # User-agent: *
 # Disallow: /backup/
 
+# The disallowed dir has directory indexing left on, so browse it to
+# discover the backup filename (rather than having to guess it):
+curl -s http://webapp/backup/
+# ...<a href="/backup/site-backup-2025-12-31.txt">site-backup-2025-12-31.txt</a>...
+
 curl -s http://webapp/backup/site-backup-2025-12-31.txt
 ```
 The backup notes also mention a leftover `/opt/app/config/` file on the

