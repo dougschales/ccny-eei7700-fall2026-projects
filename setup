@@ -2,6 +2,8 @@
 
 [ -f $HOME/.config/containers/storage.conf ] && exit 0
 
+[ ! -d $HOME/.config/containers ] && mkdir $HOME/.config/containers
+
 cat > $HOME/.config/containers/storage.conf <<EOD
 [storage]
 driver="overlay"
