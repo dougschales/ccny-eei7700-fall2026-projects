@@ -5,5 +5,8 @@
 cat > $HOME/.config/containers/storage.cf <<EOD
 [storage]
 driver="overlay"
-graphroot="/tmp/$USER/containers/storage"
+graphroot="/tmp/\$USER/containers/storage"
+
+[storage.options.overlay]
+mount_program="/usr/bin/fuse-overlayfs"
 EOD
