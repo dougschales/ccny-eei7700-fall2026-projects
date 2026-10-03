@@ -1,0 +1,9 @@
+#!/bin/sh
+
+[ -f $HOME/.config/containers/storage.cf ] && exit 0
+
+cat > $HOME/.config/containers/storage.cf <<EOD
+[storage]
+driver="overlay"
+graphroot="/tmp/$USER/containers/storage"
+EOD
