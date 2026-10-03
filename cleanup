@@ -1,0 +1,10 @@
+#!/bin/sh
+
+podman images |
+grep -v '^REPOSITORY' |
+awk '{print $3}' |
+while read id
+do
+  podman rmi -f "$id"
+done
+
