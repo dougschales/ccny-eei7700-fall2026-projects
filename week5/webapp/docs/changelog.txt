@@ -1,0 +1,10 @@
+Changelog
+=========
+
+v2.1 - Added "Fetch Report from URL" so analysts can pull in externally
+       published partner reports without leaving the dashboard. (Internal
+       reporting endpoint + token configured in config/settings.py.)
+v2.0 - Added "Import Settings" for migrating report themes/preferences
+       between environments (pairs with the existing "Export Settings").
+v1.4 - Retired the legacy PHP portal. Migrated the document library here.
+       (Old migration note left in ../notes/flag1.txt - clean up later.)

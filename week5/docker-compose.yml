@@ -1,0 +1,108 @@
+version: '3.8'
+
+# Cross-platform note: this stack must run identically under podman-compose
+# on Ubuntu, Fedora, macOS, and Windows. We do NOT use compose's
+# `networks.<name>.internal: true` here - that depends on the host's
+# iptables/nftables backend and broke on Ubuntu's older podman/netavark
+# (writes legacy iptables rules) vs. Fedora/macOS (newer netavark/nftables).
+# Plain bridge networks do not isolate from each other under podman either
+# way, so instead each internal-only service firewalls its OWN network
+# namespace with iptables in its entrypoint (see internal-api/entrypoint.sh
+# and internal-db/entrypoint-wrapper.sh). That's just the container's own
+# kernel netfilter, so it behaves the same regardless of host CNI driver.
+
+services:
+  # Foothold target. Reachable directly from the student workstation.
+  # Dual-homed: also attached to week5_internal_net so it can reach the
+  # internal-only reporting API and database, the same way a real edge web
+  # server sits between the internet and a company's internal services.
+  webapp:
+    build:
+      context: ./webapp
+    container_name: week5_webapp
+    hostname: webapp
+    restart: unless-stopped
+    init: true
+    networks:
+      week5_edge_net:
+        ipv4_address: 172.35.0.10
+      week5_internal_net:
+        ipv4_address: 172.35.1.10
+    depends_on:
+      - internal-api
+      - internal-db
+
+  # Internal-only reporting API. Only webapp's internal IP is allowed to
+  # reach it - enforced inside this container's own network namespace
+  # (entrypoint.sh), not by the host firewall.
+  internal-api:
+    build:
+      context: ./internal-api
+    container_name: week5_internal-api
+    hostname: internal-api
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+    environment:
+      API_TOKEN: "s3rv1c3_t0k3n_r3p0rt1ng_2026"
+      WEBAPP_INTERNAL_IP: "172.35.1.10"
+    networks:
+      week5_internal_net:
+        ipv4_address: 172.35.1.20
+
+  # Internal-only backend database. Same self-firewalling approach as
+  # internal-api (see internal-db/entrypoint-wrapper.sh).
+  internal-db:
+    build:
+      context: ./internal-db
+    container_name: week5_internal-db
+    hostname: internal-db
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    environment:
+      MARIADB_ROOT_PASSWORD: "r00t_only_l0cal_2026!"
+      MYSQL_DATABASE: internal
+      MYSQL_USER: svc_pivot
+      MYSQL_PASSWORD: "P1v0t_M3_2026!"
+      WEBAPP_INTERNAL_IP: "172.35.1.10"
+    volumes:
+      - ./internal-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro,Z
+    networks:
+      week5_internal_net:
+        ipv4_address: 172.35.1.30
+
+  # Student pentesting workstation. Only attached to week5_edge_net, so
+  # webapp is the only host it can reach directly. internal-api and
+  # internal-db are additionally protected by their own firewall rules
+  # even if a given host were to route between the two bridges.
+  student:
+    build:
+      context: ./student
+    container_name: week5_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week5_edge_net:
+        ipv4_address: 172.35.0.5
+    depends_on:
+      - webapp
+    stdin_open: true
+    tty: true
+
+networks:
+  week5_edge_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.35.0.0/24
+  week5_internal_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.35.1.0/24
