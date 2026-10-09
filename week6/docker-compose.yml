@@ -1,0 +1,83 @@
+version: '3.8'
+
+# Cross-platform note: this stack must run identically under
+# podman-compose on Ubuntu, Fedora, macOS, and Windows - see week5's
+# docker-compose.yml for the full discussion of why we avoid compose's
+# `networks.<name>.internal: true`. Unlike week5, this week has no
+# internal-only tier to protect: all three targets are meant to be
+# directly reachable, the way hosts on the same flat subnet would be
+# during an internal network engagement, so there's no self-firewalling
+# entrypoint logic needed here - a single flat bridge network with
+# static IPs is enough.
+
+services:
+  # vsftpd 2.3.4 backdoor (CVE-2011-2523, emulated - see target-ftp/app.py).
+  # FTP on 21; the backdoor shell listens on 6200 once triggered.
+  target-ftp:
+    build:
+      context: ./target-ftp
+    container_name: week6_target-ftp
+    hostname: target-ftp
+    restart: unless-stopped
+    init: true
+    networks:
+      week6_net:
+        ipv4_address: 172.36.0.21
+
+  # distccd pre-whitelist RCE (CVE-2004-2687, emulated - see
+  # target-build/app.py). The real packaged distccd now refuses any job
+  # outside its compiler whitelist, so this reproduces the historical
+  # pre-fix wire protocol instead. Unauthenticated remote command
+  # execution via the distcc build protocol on 3632.
+  target-build:
+    build:
+      context: ./target-build
+    container_name: week6_target-build
+    hostname: target-build
+    restart: unless-stopped
+    init: true
+    networks:
+      week6_net:
+        ipv4_address: 172.36.0.22
+
+  # UnrealIRCd 3.2.8.1 Trojan backdoor (CVE-2010-2075, emulated - see
+  # target-irc/app.py). IRC on 6667; "AB" lines are executed blindly.
+  target-irc:
+    build:
+      context: ./target-irc
+    container_name: week6_target-irc
+    hostname: target-irc
+    restart: unless-stopped
+    init: true
+    networks:
+      week6_net:
+        ipv4_address: 172.36.0.23
+
+  # Student pentesting workstation - Kali, with Metasploit Framework,
+  # nmap, and searchsploit for identifying and exploiting the targets.
+  student:
+    build:
+      context: ./student
+    container_name: week6_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week6_net:
+        ipv4_address: 172.36.0.5
+    depends_on:
+      - target-ftp
+      - target-build
+      - target-irc
+    stdin_open: true
+    tty: true
+
+networks:
+  week6_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.36.0.0/24

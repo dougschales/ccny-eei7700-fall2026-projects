@@ -1,0 +1,1 @@
+FLAG{distccd_unauthenticated_build_exec_cve_2004_2687}

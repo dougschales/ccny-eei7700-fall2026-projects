@@ -1,0 +1,1 @@
+FLAG{vsftpd_234_smiley_backdoor_6200}
