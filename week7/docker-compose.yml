@@ -1,0 +1,53 @@
+version: '3.8'
+
+# Cross-platform note: this stack must run identically under
+# podman-compose on Ubuntu, Fedora, macOS, and Windows - see week5's
+# docker-compose.yml for the full discussion of why we avoid compose's
+# `networks.<name>.internal: true`. This week has only one target and no
+# isolation story to teach (that's weeks 9/11) - a single flat bridge
+# network with static IPs is enough.
+
+services:
+  # Linux privilege-escalation target: a single low-privileged SSH
+  # account ("trainee") plus four independent, intentionally planted
+  # local privesc vectors (SUID PATH hijack, passwordless sudo on
+  # `find`, a capability handed to python3, and a world-writable root
+  # cron script). See target/entrypoint.sh for the full setup.
+  target:
+    build:
+      context: ./target
+    container_name: week7_target
+    hostname: target
+    restart: unless-stopped
+    init: true
+    networks:
+      week7_net:
+        ipv4_address: 172.37.0.10
+
+  # Student pentesting workstation - just an SSH client and basic
+  # enumeration tools. The point of this week is manual enumeration
+  # (find, sudo -l, getcap, crontab), not a framework.
+  student:
+    build:
+      context: ./student
+    container_name: week7_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week7_net:
+        ipv4_address: 172.37.0.5
+    depends_on:
+      - target
+    stdin_open: true
+    tty: true
+
+networks:
+  week7_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.37.0.0/24

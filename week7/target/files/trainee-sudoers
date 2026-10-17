@@ -1,0 +1,4 @@
+# Ops asked for passwordless `find` so the nightly audit script (run as
+# trainee) could locate stale files without a login prompt. Nobody
+# noticed `find` ships its own `-exec`.
+trainee ALL=(ALL) NOPASSWD: /usr/bin/find
