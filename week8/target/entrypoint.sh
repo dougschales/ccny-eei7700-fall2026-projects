@@ -19,16 +19,24 @@ fi
 
 echo "[+] Initializing Week 8 credential-harvesting target..."
 
-# Pin the shadow hash scheme to SHA-512 crypt ($6$) explicitly. Newer
-# Ubuntu base image updates default to yescrypt ($y$), which this week's
-# cracking path (and the syllabus's "Linux shadow hashes" discussion)
-# doesn't cover - without this, the lab's hash format would silently
-# depend on exactly when each student's base image was pulled.
-sed -i 's/^ENCRYPT_METHOD.*/ENCRYPT_METHOD SHA512/' /etc/login.defs
-grep -q '^ENCRYPT_METHOD' /etc/login.defs || echo 'ENCRYPT_METHOD SHA512' >> /etc/login.defs
+# Pin the shadow hash scheme to MD5 crypt ($1$) explicitly, NOT SHA-512
+# ($6$). Ubuntu's stock (non-jumbo) "john" package only has dedicated,
+# self-contained support for a handful of formats (descrypt/bsdicrypt/
+# md5crypt/bcrypt) - everything else, including $6$, is cracked through
+# john's generic "crypt" format, which just calls the system's own
+# crypt(3) via libcrypt.so.1. Confirmed by diffing the actual amd64 and
+# arm64 .deb packages: amd64's john links libcrypt.so.1 and has the
+# generic crypt(3) format built in; arm64's does not depend on
+# libcrypt1 at all and has no generic crypt(3) support whatsoever - so
+# a $6$ hash is architecture-dependent "uncrackable" on arm64 (Apple
+# Silicon Mac) students' builds with the exact command everyone else
+# uses. md5crypt has its own dedicated, bundled implementation in john
+# and behaves identically on both architectures.
+sed -i 's/^ENCRYPT_METHOD.*/ENCRYPT_METHOD MD5/' /etc/login.defs
+grep -q '^ENCRYPT_METHOD' /etc/login.defs || echo 'ENCRYPT_METHOD MD5' >> /etc/login.defs
 # chpasswd goes through PAM on this image, and pam_unix.so's own
 # "yescrypt" argument overrides login.defs - patch it too.
-sed -i 's/pam_unix\.so obscure yescrypt/pam_unix.so obscure sha512/' /etc/pam.d/common-password
+sed -i 's/pam_unix\.so obscure yescrypt/pam_unix.so obscure md5/' /etc/pam.d/common-password
 
 # --- Foothold account: password known only to the wordlist ---------------
 # Unlike previous weeks, the password is never handed out - cracking it
