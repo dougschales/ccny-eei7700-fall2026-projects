@@ -1,0 +1,57 @@
+version: '3.8'
+
+# Cross-platform note: this stack must run identically under
+# podman-compose on Ubuntu, Fedora, macOS, and Windows - see week5's
+# docker-compose.yml for the full discussion of why we avoid compose's
+# `networks.<name>.internal: true`. Like week7, this week has a single
+# target and no isolation story to teach - a flat bridge network with
+# static IPs is enough.
+
+services:
+  # Credential-harvesting target: a low-privileged SSH foothold account
+  # ("trainee") whose password must be brute-forced, plus three
+  # independent, intentionally planted credential-harvesting vectors
+  # (a readable shadow backup, a leftover application database export,
+  # and a forgotten encrypted SSH private key) that only yield access
+  # once their hash/passphrase is actually cracked. See
+  # target/entrypoint.sh for the full setup.
+  target:
+    build:
+      context: ./target
+    container_name: week8_target
+    hostname: target
+    restart: unless-stopped
+    init: true
+    networks:
+      week8_net:
+        ipv4_address: 172.38.0.10
+
+  # Student pentesting workstation - SSH client plus the password/hash
+  # cracking toolchain this week is actually about: Hydra (online
+  # brute force), John the Ripper (offline hash cracking), and Hashcat
+  # (installed for completeness - see README_W8.md for why it isn't
+  # the guaranteed path in a container with no GPU passthrough).
+  student:
+    build:
+      context: ./student
+    container_name: week8_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week8_net:
+        ipv4_address: 172.38.0.5
+    depends_on:
+      - target
+    stdin_open: true
+    tty: true
+
+networks:
+  week8_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.38.0.0/24
