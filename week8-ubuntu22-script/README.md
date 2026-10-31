@@ -91,7 +91,7 @@ John the Ripper and Hydra alone, which have no such dependency.
 
 Built and verified end-to-end in this sandbox using only the
 student-facing commands (slide deck + `../../solutions/README_W8.md`),
-not the instructor solution's shortcuts. That surfaced and fixed three
+not the instructor solution's shortcuts. That surfaced and fixed four
 real bugs, since corrected in `target/entrypoint.sh` and the
 student-facing docs:
 
@@ -119,6 +119,22 @@ student-facing docs:
   with no indication of what went wrong. Fixed by adding `chmod 600` to
   the key before the loop, in the slide deck, the Hints slide, and
   `../../solutions/README_W8.md`.
+- **Vector 1's `$6$`/SHA-512 hash was uncrackable on arm64 hosts.**
+  Confirmed by pulling the real `john_1.8.0-4ubuntu3_amd64.deb` and
+  `..._arm64.deb` packages from Ubuntu's archive and diffing the
+  binaries: the amd64 build links `libcrypt.so.1` and has John's generic
+  `crypt` format (the one that calls the system's `crypt(3)` and
+  transparently handles `$1$`/`$5$`/`$6$`/`$y$`) fully compiled in; the
+  arm64 build has **no `libcrypt1` dependency at all**, and that format
+  is simply absent from its own `--format=NAME` usage banner. A student
+  on an Apple Silicon Mac running the exact documented command against
+  the `$6$` shadow backup got "No password hashes loaded" with no
+  indication why, while amd64 students saw it crack instantly. Fixed by
+  switching `target/entrypoint.sh`'s `ENCRYPT_METHOD` from `SHA512` to
+  `MD5`, so the planted hash is `$1$` and crackable with John's own
+  bundled, architecture-independent `md5crypt` format - updated in the
+  slide deck, `../../solutions/README_W8.md`, and
+  `../../solutions/SOLUTION_W8.md`.
 
 With those fixes, all 5 flags were confirmed reachable using exactly the
 commands given to students (not the instructor-only shortcuts). This

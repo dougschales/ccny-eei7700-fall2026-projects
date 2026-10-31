@@ -1,0 +1,59 @@
+version: '3.8'
+
+# Cross-platform note: this stack must run identically under
+# podman-compose on Ubuntu, Fedora, macOS, and Windows - see week5's
+# docker-compose.yml for the full discussion of why we avoid compose's
+# `networks.<name>.internal: true`. Like weeks 7-8, this week has a
+# single target and no isolation story to teach - a flat bridge network
+# with static IPs is enough.
+
+services:
+  # HelpDesk API + SSH target: a Flask REST API with a BOLA/IDOR flaw on
+  # ticket lookup, a mass-assignment role-escalation flaw on the profile
+  # endpoint, and a broken function-level authorization check on
+  # attachment downloads that trusts the role the mass-assignment bug
+  # lets you forge. Escalating through the API leaks a passphrase-
+  # protected SSH private key for a service account ("opskey") reachable
+  # on this same box. Cracking that passphrase (Week 8 technique) and
+  # finding a new sudo misconfiguration (Week 7 technique, different
+  # binary) completes the chain. See target/entrypoint.sh for the full
+  # setup.
+  target:
+    build:
+      context: ./target
+    container_name: week9_target
+    hostname: target
+    restart: unless-stopped
+    init: true
+    networks:
+      week9_net:
+        ipv4_address: 172.39.0.10
+
+  # Student pentesting workstation - curl/jq for manual API exploration,
+  # John the Ripper plus a shared wordlist for cracking the leaked key
+  # passphrase, and an SSH client for the final foothold. No exploit
+  # framework: the point this week is reading API responses carefully.
+  student:
+    build:
+      context: ./student
+    container_name: week9_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week9_net:
+        ipv4_address: 172.39.0.5
+    depends_on:
+      - target
+    stdin_open: true
+    tty: true
+
+networks:
+  week9_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.39.0.0/24

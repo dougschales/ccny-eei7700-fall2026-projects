@@ -1,0 +1,5 @@
+# Release engineering asked for passwordless `tar` so the unattended
+# nightly packaging job (run as opskey) could archive build artifacts
+# without a login prompt. Nobody noticed `tar` ships its own
+# --checkpoint-action=exec.
+opskey ALL=(ALL) NOPASSWD: /usr/bin/tar
