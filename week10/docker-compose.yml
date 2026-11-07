@@ -42,9 +42,14 @@ services:
     hostname: student
     restart: unless-stopped
     init: true
+    # SYS_PTRACE: gdb can't actually run or attach to any process without
+    # this (default container capabilities + seccomp block ptrace(2)
+    # outright) - needed to debug a locally-run copy of the leaked
+    # statusd binary, not just to disassemble it statically.
     cap_add:
       - NET_ADMIN
       - NET_RAW
+      - SYS_PTRACE
     networks:
       week10_net:
         ipv4_address: 172.40.0.5
