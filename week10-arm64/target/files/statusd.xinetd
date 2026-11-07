@@ -1,0 +1,16 @@
+# FleetOps status collector - one fresh statusd process per connection,
+# with stdin/stdout/stderr wired directly to the client socket. Runs as
+# the low-privileged "svc" account, never as root.
+service statusd
+{
+    type        = UNLISTED
+    socket_type = stream
+    protocol    = tcp
+    port        = 7777
+    wait        = no
+    user        = svc
+    server      = /usr/local/bin/statusd-launch
+    disable     = no
+    instances   = 50
+    per_source  = 10
+}

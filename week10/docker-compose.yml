@@ -1,0 +1,61 @@
+version: '3.8'
+
+# x86_64 variant - see ../week10-arm64/ for Apple Silicon Macs and
+# ../week10-ubuntu22-script/ for stock Ubuntu 22.04 (podman-compose
+# networking bug, same as every prior week). The vulnerable statusd
+# binary is compiled inside the target container at startup (see
+# target/entrypoint.sh), so it is always a native x86_64 binary here -
+# `platform` just pins which architecture podman builds/runs, matching
+# Intel/AMD Linux, Windows/WSL2, and Intel Macs.
+
+services:
+  target:
+    build:
+      context: ./target
+    platform: linux/amd64
+    container_name: week10_target
+    hostname: target
+    restart: unless-stopped
+    init: true
+    # Default seccomp profiles block personality(2), which statusd-launch
+    # and the diagtool privesc step both use (via `setarch -R`) to
+    # disable ASLR for just that one process - see entrypoint.sh for why
+    # that one syscall is opened up instead of writing
+    # /proc/sys/kernel/randomize_va_space.
+    security_opt:
+      - seccomp=unconfined
+    # SYS_PTRACE: the documented measurement technique ("attach gdb to a
+    # connection you're holding open") is a root->svc ptrace, which needs
+    # CAP_SYS_PTRACE even inside the container - without it gdb -p fails
+    # with "Could not attach... Inappropriate ioctl for device."
+    cap_add:
+      - SYS_PTRACE
+    networks:
+      week10_net:
+        ipv4_address: 172.40.0.10
+
+  student:
+    build:
+      context: ./student
+    platform: linux/amd64
+    container_name: week10_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week10_net:
+        ipv4_address: 172.40.0.5
+    depends_on:
+      - target
+    stdin_open: true
+    tty: true
+
+networks:
+  week10_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.40.0.0/24
