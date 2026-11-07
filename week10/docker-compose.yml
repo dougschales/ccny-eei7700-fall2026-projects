@@ -46,6 +46,13 @@ services:
     # this (default container capabilities + seccomp block ptrace(2)
     # outright) - needed to debug a locally-run copy of the leaked
     # statusd binary, not just to disassemble it statically.
+    # seccomp=unconfined: students need to disable ASLR for their own
+    # locally-run copy too (via setarch -R, same as entrypoint.sh does
+    # on target) so the address they measure locally actually matches
+    # the live, non-ASLR target - default seccomp blocks personality(2)
+    # the same way it would on target without this override.
+    security_opt:
+      - seccomp=unconfined
     cap_add:
       - NET_ADMIN
       - NET_RAW

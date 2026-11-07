@@ -104,6 +104,7 @@ segment. Do not expose this service beyond the fleet VLAN.
 EOF
 cp /usr/local/bin/statusd /opt/app/internal/releases/statusd
 cp /opt/build/statusd.c /opt/app/internal/releases/statusd.c
+cp /opt/build/statusd.xinetd /opt/app/internal/releases/statusd.xinetd
 cat > /opt/app/internal/releases/RELEASE_NOTES.txt <<'EOF'
 statusd 1.4 release build - matches the binary currently deployed on
 TCP/7777. Source included for the next code review pass.

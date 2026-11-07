@@ -118,10 +118,16 @@ do_up() {
   # without this (default container capabilities + seccomp block
   # ptrace(2) outright) - needed to debug a locally-run copy of the
   # leaked statusd binary, not just to disassemble it statically.
+  # --security-opt seccomp=unconfined: students need to disable ASLR for
+  # their own locally-run copy too (via setarch -R, same as target's
+  # launcher scripts) so the address they measure locally actually
+  # matches the live, non-ASLR target - default seccomp blocks
+  # personality(2) the same way it would on target without this.
   podman run -d \
     --name week10_student --hostname student \
     --restart unless-stopped --init \
     -it \
+    --security-opt seccomp=unconfined \
     --cap-add NET_ADMIN --cap-add NET_RAW --cap-add SYS_PTRACE \
     --network "$NET" --ip "$STUDENT_IP" --network-alias student \
     week10-student >/dev/null
