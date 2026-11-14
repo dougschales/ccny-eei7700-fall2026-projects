@@ -23,6 +23,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /etc/mysql/conf.d && \
     printf '[client]\nssl-mode=DISABLED\n' > /etc/mysql/conf.d/no-ssl.cnf
 
+# This client exists only so root's cron healthcheck below can reach
+# db directly - it is NOT meant to be a free ride for whichever
+# non-root account gets compromised. default-mysql-client installs it
+# world-executable, and db's firewall trusts any connection from
+# pivot's own internal IP, so without this the entire pivoting lesson
+# (ssh -D blocked -> chisel reverse socks -> proxychains) is skippable
+# by just running `mysql -h 172.41.1.20 ...` straight from an SSH
+# session on pivot. Locking it to root closes that.
+RUN chmod 700 /usr/bin/mysql /usr/bin/mysqladmin /usr/bin/mysqldump \
+      /usr/bin/mysqlshow /usr/bin/mysql_config_editor
+
 # chisel - pinned release, matched to the build host's own architecture
 # (amd64/arm64) so this image builds correctly on x86_64 hosts and on
 # Apple Silicon/arm64 hosts alike without needing a Go toolchain in the
@@ -60,7 +71,7 @@ COPY files/db-healthcheck.sh /opt/monitoring/db-healthcheck.sh
 COPY files/db-healthcheck-cron /opt/build/db-healthcheck-cron
 COPY files/sshd_config.d_lab.conf /opt/build/sshd_config.d_lab.conf
 COPY entrypoint.sh /opt/build/entrypoint.sh
-RUN chmod +x /opt/build/entrypoint.sh && chmod 644 /opt/monitoring/db-healthcheck.sh
+RUN chmod +x /opt/build/entrypoint.sh && chmod 744 /opt/monitoring/db-healthcheck.sh
 
 EXPOSE 80 22
 
