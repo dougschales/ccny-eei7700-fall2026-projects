@@ -110,6 +110,40 @@ statusd 1.4 release build - matches the binary currently deployed on
 TCP/7777. Source included for the next code review pass.
 FLAG{lfi_leaked_statusd_binary_and_source}
 EOF
+# An on-call engineer's leftover repro notes from a prior ticket - the
+# kind of stray file a real internal release share accumulates over
+# time. Gives away nothing about the overflow itself, just how to run
+# this binary outside of xinetd the same way xinetd actually does -
+# genuinely useful, not just flavor text (see statusd.xinetd for the
+# config this note is explaining).
+cat > /opt/app/internal/releases/oncall_notes.txt <<'EOF'
+statusd repro notes - ticket OPS-4417
+--------------------------------------
+Chasing the "resets under load" ticket. Wasted most of an afternoon
+because running the binary by hand from an interactive shell behaves
+differently from how xinetd actually launches it - turns out xinetd
+doesn't hand the service a clean environment. It passes through
+whatever locale variables were sitting in ITS OWN environment at
+startup (all empty on this box, but still present on the child's
+environment - diffed /proc/<pid>/environ against a real xinetd-spawned
+worker to confirm), plus one variable it sets itself per connection
+(REMOTE_HOST, the client's address).
+
+Copying the exact invocation here so the next person debugging this
+doesn't lose an afternoon to it too. Run this from wherever you drop
+the binary - path matters as much as the env does, so keep it at
+/usr/local/bin/statusd, not /tmp:
+
+env -i \
+  REMOTE_HOST="::ffff:172.40.0.5" \
+  LANGUAGE= LC_TIME= LC_CTYPE= LC_MONETARY= TERM= LC_COLLATE= \
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  LC_ADDRESS= LANG= LC_TELEPHONE= LC_MESSAGES= LC_NAME= LC_MEASUREMENT= \
+  LC_IDENTIFICATION= LC_ALL= PWD=/ LC_NUMERIC= LC_PAPER= \
+  setarch "$(uname -m)" -R /usr/local/bin/statusd
+
+- M.
+EOF
 chmod -R a+rX /opt/app/docs /opt/app/internal
 
 touch "$PROVISION_MARK"

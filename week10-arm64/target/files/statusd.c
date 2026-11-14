@@ -18,7 +18,9 @@
  * Release artifacts (this binary, this source file, and the matching
  * release notes) are mirrored as a set under internal/releases/ - if
  * you pulled this file via the docs portal, the release notes sit
- * right alongside it.
+ * right alongside it. So does a stray on-call engineer's repro notes
+ * from a prior ticket on this exact service - worth a look if you ever
+ * need to run this binary the same way xinetd does.
  */
 #include <unistd.h>
 
