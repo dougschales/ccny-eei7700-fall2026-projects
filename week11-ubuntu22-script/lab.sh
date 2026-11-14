@@ -9,14 +9,21 @@
 # machinery is never in the picture. The pivot/db/student images and
 # app code are identical to ../week11/.
 #
-# Everything here uses only podman-3.4-safe syntax:
+# Everything here uses only podman-3.4-safe syntax (same approach as
+# ../week5-ubuntu22-script/, which has the same dual-homed-host problem):
 #   - `podman network create --subnet ...`
 #   - `podman run --network <name> --ip <addr> --network-alias <name>`
 #     (a single network with a static IP is supported on 3.4; the newer
-#      `--network name:ip=...,alias=...` form is NOT, so we avoid it)
-#   - pivot is attached to BOTH networks via two separate
-#     `podman network connect` calls after `podman run`, since 3.4's
-#     `podman run` only accepts one `--network` flag.
+#      `--network name:ip=...,alias=...` form, and `--ip` on
+#      `network connect`, are 4.0+ and are NOT available on 3.4 - using
+#      `network connect --ip` here throws "--ip is not a valid option").
+#   - pivot is started on INTERNAL_NET first (with a pinned --ip, since
+#     db's own firewall only accepts traffic from that exact address),
+#     then EDGE_NET is attached after the fact with a plain
+#     `podman network connect --alias pivot` (no --ip - the address podman
+#     assigns there isn't guaranteed to be PIVOT_EDGE_IP). Reachability
+#     from `student` relies on the "pivot" network alias (podman's
+#     embedded DNS), not that literal address - see README.md.
 #
 # Usage:
 #   ./lab.sh up        build images, create the networks, start everything
@@ -120,14 +127,19 @@ do_up() {
     --network "$INTERNAL_NET" --ip "$DB_IP" --network-alias db \
     week11-db >/dev/null
 
-  say "starting pivot ($PIVOT_EDGE_IP edge / $PIVOT_INTERNAL_IP internal, dual-homed)"
+  say "starting pivot (internal $PIVOT_INTERNAL_IP pinned, edge net attached after - compose variants pin edge at $PIVOT_EDGE_IP, this one lets podman assign it)"
+  # Start on INTERNAL_NET first so the pinned --ip form (3.4-safe) can
+  # set the address db's firewall actually checks. EDGE_NET is attached
+  # second via plain `network connect` - no --ip on 3.4, so that side's
+  # address is whatever podman's IPAM assigns, not necessarily
+  # PIVOT_EDGE_IP. That's fine: nothing depends on pivot's edge address
+  # being that literal value, only on the "pivot" alias resolving there.
   podman run -d \
     --name week11_pivot --hostname pivot \
     --restart unless-stopped --init \
-    --network "$EDGE_NET":"$PIVOT_EDGE_IP" \
-    --network "$INTERNAL_NET":"$PIVOT_INTERNAL_IP" \
+    --network "$INTERNAL_NET" --ip "$PIVOT_INTERNAL_IP" --network-alias pivot \
     week11-pivot >/dev/null
-  # podman 3.4's `run` only takes one --network; attach the second
+  podman network connect --alias pivot "$EDGE_NET" week11_pivot
   say "starting student ($STUDENT_IP)"
   podman run -d \
     --name week11_student --hostname student \
@@ -139,7 +151,7 @@ do_up() {
 
   echo
   say "lab is up. Get a shell on the workstation with:  ./lab.sh shell"
-  say "from there, start recon against the edge host at $PIVOT_EDGE_IP"
+  say "from there, start recon against the edge host: curl -s http://pivot/robots.txt"
 }
 
 do_down() {
