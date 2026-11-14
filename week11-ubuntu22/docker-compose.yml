@@ -1,0 +1,90 @@
+version: '3.8'
+
+# Cross-platform note: same reasoning as week5's docker-compose.yml.
+# This stack must run identically under podman-compose on Ubuntu,
+# Fedora, macOS, and Windows. We do NOT use compose's
+# `networks.<name>.internal: true` - host-firewall-dependent, broke on
+# Ubuntu's older podman/netavark during testing. Plain bridge networks
+# do not isolate from each other under podman either way, so `db`
+# firewalls its OWN network namespace with iptables in its entrypoint
+# (see db/entrypoint-wrapper.sh) instead.
+
+services:
+  # Dual-homed edge web server - reachable directly from the student
+  # workstation, and also attached to week11_internal_net so it can
+  # reach the internal-only reporting database, the same way a real
+  # edge host sits between the internet and a company's internal
+  # network. Leaks SSH credentials for a low-privileged account via its
+  # own docroot, and carries a chisel binary left behind by whoever set
+  # it up - both meant to be found by enumeration, not read about here.
+  pivot:
+    build:
+      context: ./pivot
+    container_name: week11_pivot
+    hostname: pivot
+    restart: unless-stopped
+    init: true
+    networks:
+      week11_edge_net:
+        ipv4_address: 172.41.0.10
+      week11_internal_net:
+        ipv4_address: 172.41.1.10
+    depends_on:
+      - db
+
+  # Internal-only reporting database. Only pivot's internal IP is
+  # allowed to reach it - enforced inside this container's own network
+  # namespace (entrypoint-wrapper.sh), not by the host firewall.
+  db:
+    build:
+      context: ./db
+    container_name: week11_db
+    hostname: db
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    environment:
+      MARIADB_ROOT_PASSWORD: "r00t_only_l0cal_2026!"
+      MYSQL_DATABASE: ops_internal
+      MYSQL_USER: svc_monitor
+      MYSQL_PASSWORD: "M0nit0r_2026!"
+      PIVOT_INTERNAL_IP: "172.41.1.10"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro,Z
+    networks:
+      week11_internal_net:
+        ipv4_address: 172.41.1.20
+
+  # Student pentesting workstation. Only attached to week11_edge_net, so
+  # pivot is the only host it can reach directly. db is additionally
+  # protected by its own firewall rules even if a given host were to
+  # route between the two bridges.
+  student:
+    build:
+      context: ./student
+    container_name: week11_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      week11_edge_net:
+        ipv4_address: 172.41.0.5
+    depends_on:
+      - pivot
+    stdin_open: true
+    tty: true
+
+networks:
+  week11_edge_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.41.0.0/24
+  week11_internal_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.41.1.0/24

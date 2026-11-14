@@ -1,0 +1,8 @@
+Maintenance window - CDN migration
+-----------------------------------
+Start: Nov 2, 02:00 local
+End:   Nov 2, 05:00 local
+
+Scope: portal front-end only. No changes expected to internal
+reporting systems. NOC was notified; healthcheck alerting stays on
+during the window.

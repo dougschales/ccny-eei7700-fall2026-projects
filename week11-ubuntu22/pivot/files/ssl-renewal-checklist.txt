@@ -1,0 +1,8 @@
+TLS renewal checklist (portal public cert)
+-------------------------------------------
+[ ] Confirm cert expiry date with registrar
+[ ] Request renewal
+[ ] Install new cert + chain
+[ ] Reload web server
+[ ] Verify from an external vantage point
+[ ] Update this checklist's own date stamp (last done: unknown)

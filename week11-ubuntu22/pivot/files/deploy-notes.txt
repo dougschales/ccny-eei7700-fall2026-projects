@@ -1,0 +1,13 @@
+Ops handoff - temporary access during Nov maintenance window
+--------------------------------------------------------------
+Created a scratch account on the portal box for the CDN migration
+work since nobody wanted to keep using the shared deploy key.
+
+  host:     portal (edge-facing)
+  user:     webadmin
+  password: N0v2026_Maint!
+
+Remove this account once the migration is confirmed done. Don't
+forget to pull this folder off the web server when you're finished -
+it should never have been dropped under the docroot in the first
+place.
