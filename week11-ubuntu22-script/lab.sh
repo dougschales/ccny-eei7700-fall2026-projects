@@ -124,12 +124,10 @@ do_up() {
   podman run -d \
     --name week11_pivot --hostname pivot \
     --restart unless-stopped --init \
-    --network "$EDGE_NET" --ip "$PIVOT_EDGE_IP" --network-alias pivot \
+    --network "$EDGE_NET":"$PIVOT_EDGE_IP" \
+    --network "$INTERNAL_NET":"$PIVOT_INTERNAL_IP" \
     week11-pivot >/dev/null
   # podman 3.4's `run` only takes one --network; attach the second
-  # network with a separate `connect` call.
-  podman network connect --ip "$PIVOT_INTERNAL_IP" "$INTERNAL_NET" week11_pivot
-
   say "starting student ($STUDENT_IP)"
   podman run -d \
     --name week11_student --hostname student \
