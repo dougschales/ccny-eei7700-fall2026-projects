@@ -1,0 +1,8 @@
+Ops reminder - internal CI API
+================================
+build-ci's Ops API expects its auth token in the X-Ops-Token header,
+not Authorization. This bit two people last quarter who copy-pasted
+curl commands from the old integration guide - the API will just
+return 401 forever if you send it the "normal" way.
+
+FLAG{w12_1_anonymous_ftp_recon}

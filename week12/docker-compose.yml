@@ -1,0 +1,122 @@
+version: '3.8'
+
+# Week 12 Capstone: cross-platform note - no networks.<name>.internal:
+# true anywhere (host-firewall-dependent, confirmed broken on stock
+# Ubuntu 22.04 podman). Segmentation is structural (hosts simply aren't
+# attached to networks they shouldn't reach) plus iptables-in-container
+# self-firewalling on internal-db/core-finance, same approach as weeks
+# 5/11.
+
+services:
+  edge-web:
+    build:
+      context: ./edge-web
+    container_name: week12_edge-web
+    hostname: edge-web
+    restart: unless-stopped
+    init: true
+    networks:
+      cap_edge_net:
+        ipv4_address: 172.42.0.10
+
+  build-ci:
+    build:
+      context: ./build-ci
+    container_name: week12_build-ci
+    hostname: build-ci
+    restart: unless-stopped
+    init: true
+    networks:
+      cap_edge_net:
+        ipv4_address: 172.42.0.11
+      cap_internal_net:
+        ipv4_address: 172.42.1.11
+
+  internal-db:
+    build:
+      context: ./internal-db
+    container_name: week12_internal-db
+    hostname: internal-db
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    environment:
+      MARIADB_ROOT_PASSWORD: "r00t_only_l0cal_2026!"
+      MYSQL_DATABASE: ops_ci
+      MYSQL_USER: svc_ci
+      MYSQL_PASSWORD: "CIM3ta_2026!"
+      BUILD_CI_INTERNAL_IP: "172.42.1.11"
+    volumes:
+      - ./internal-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro,Z
+    networks:
+      cap_internal_net:
+        ipv4_address: 172.42.1.20
+
+  legacy-svc:
+    build:
+      context: ./legacy-svc
+    container_name: week12_legacy-svc
+    hostname: legacy-svc
+    restart: unless-stopped
+    init: true
+    networks:
+      cap_internal_net:
+        ipv4_address: 172.42.1.30
+      cap_core_net:
+        ipv4_address: 172.42.2.30
+
+  core-finance:
+    build:
+      context: ./core-finance
+    container_name: week12_core-finance
+    hostname: core-finance
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    environment:
+      MARIADB_ROOT_PASSWORD: "r00t_only_l0cal_2026!"
+      MYSQL_DATABASE: finance_core
+      MYSQL_USER: svc_ledger
+      MYSQL_PASSWORD: "L3dger_Sync_26!"
+      LEGACY_SVC_CORE_IP: "172.42.2.30"
+    volumes:
+      - ./core-finance/init.sql:/docker-entrypoint-initdb.d/init.sql:ro,Z
+    networks:
+      cap_core_net:
+        ipv4_address: 172.42.2.40
+
+  student:
+    build:
+      context: ./student
+    container_name: week12_student
+    hostname: student
+    restart: unless-stopped
+    init: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      cap_edge_net:
+        ipv4_address: 172.42.0.5
+    depends_on:
+      - edge-web
+      - build-ci
+    stdin_open: true
+    tty: true
+
+networks:
+  cap_edge_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.42.0.0/24
+  cap_internal_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.42.1.0/24
+  cap_core_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.42.2.0/24

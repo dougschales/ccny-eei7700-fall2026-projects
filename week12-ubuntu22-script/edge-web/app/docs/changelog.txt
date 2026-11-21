@@ -1,0 +1,14 @@
+GlobalCorp Portal - Release Notes
+==================================
+
+v2.4 (2026-11-02)
+  - Fixed footer typo on contact page.
+  - CI tenant configuration moved out of source control into
+    config/ci_settings.ini on the app host. Ops: update any
+    hardcoded tenant references to read from there instead.
+
+v2.3 (2026-10-19)
+  - Admin panel now shows the active build-ci integration token.
+
+v2.2 (2026-09-30)
+  - Initial public release of the employee portal.

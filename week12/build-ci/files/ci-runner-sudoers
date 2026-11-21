@@ -1,0 +1,4 @@
+# Release packaging grabs the latest build artifacts as root for the
+# nightly upload job. Ops granted tar access outright rather than scoping
+# which arguments ci-runner is allowed to pass it.
+ci-runner ALL=(root) NOPASSWD: /usr/bin/tar

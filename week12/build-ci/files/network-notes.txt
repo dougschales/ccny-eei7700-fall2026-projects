@@ -1,0 +1,10 @@
+Network notes - build-ci
+=========================
+This host is dual-homed: one leg faces the edge/CI API, the other
+reaches the internal ops network (172.42.1.0/24) for internal-only
+services like the reporting DB.
+
+Internal reporting DB: internal-db (172.42.1.20:3306)
+  service account: svc_ci / CIM3ta_2026!  (database: ops_ci)
+
+FLAG{w12_6_sudo_tar_checkpoint_root}
