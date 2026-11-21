@@ -18,6 +18,6 @@ COPY vsftpd.conf /etc/vsftpd.conf
 COPY entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh && chmod -R a+rX /srv/ftp
 
-EXPOSE 80 21 30000-30009
+EXPOSE 80 21 30000 30001 30002 30003 30004 30005 30006 30007 30008 30009
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
